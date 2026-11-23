@@ -159,10 +159,16 @@ export const EventsView: React.FC<EventsViewProps> = ({
                       {evt.choices.map((choice) => {
                         const insuredMedical =
                           evt.templateId === 'exp_medical' && Boolean(game.healthInsured);
+                        const ownedPersonalAssets = game.personalAssets ?? [];
                         const insuredAsset =
-                          (evt.templateId === 'exp_car_repair' ||
-                            evt.templateId === 'exp_home_repair') &&
-                          Boolean(game.propertyInsured);
+                          (evt.templateId === 'exp_car_repair' &&
+                            (Boolean(game.propertyInsured) ||
+                              ownedPersonalAssets.some((a) => a.id === 'car' && a.insured))) ||
+                          (evt.templateId === 'exp_home_repair' &&
+                            (Boolean(game.propertyInsured) ||
+                              ownedPersonalAssets.some(
+                                (a) => (a.id === 'house' || a.id === 'villa') && a.insured
+                              )));
                         const requiredCash =
                           choice.effectType === 'stock_opportunity'
                             ? Math.round((choice.amount ?? 0) * (choice.shares ?? 1) * 100) / 100

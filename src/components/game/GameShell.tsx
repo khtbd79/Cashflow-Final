@@ -6,7 +6,6 @@ import {
   Building2,
   CalendarPlus,
   CreditCard,
-  FileSpreadsheet,
   Flame,
   Gem,
   Home,
@@ -39,7 +38,6 @@ import { PWAInstallButton } from '../common/PWAInstallButton';
 import { BusinessesView } from './BusinessesView';
 import { DashboardView } from './DashboardView';
 import { EventsView } from './EventsView';
-import { FinancesView } from './FinancesView';
 import { InvestmentMarketView } from './InvestmentMarketView';
 import { LoansView } from './LoansView';
 import { PropertiesView } from './PropertiesView';
@@ -55,6 +53,7 @@ interface GameShellProps {
   onDismissToast: () => void;
   onChangeSection: (section: NavSection) => void;
   onNextMonth: () => void;
+  onPayMonthlyExpense: () => void;
   onBuyStock: (symbol: string, shares: number) => void;
   onSellStock: (symbol: string, shares: number) => void;
   onBuyCrypto: (symbol: string, units: number) => void;
@@ -80,9 +79,11 @@ interface GameShellProps {
   onIgnoreAllEvents: () => void;
   onToggleIgnoreEvents: (ignore: boolean) => void;
   onBuyHappiness: (itemId: string) => void;
+  onIgnoreHappinessCard: (cardId: string) => void;
   onBuyPersonalAsset: (assetId: PersonalAssetId) => void;
   onTogglePersonalAssetInsurance: (assetId: PersonalAssetId) => void;
   onMarry: () => void;
+  onCompleteEducation: (courseId: string) => void;
   onToggleInsurance: (planId: 'health' | 'property') => void;
   onTryVenture: (
     ventureId: string
@@ -105,6 +106,7 @@ export const GameShell: React.FC<GameShellProps> = ({
   onDismissToast,
   onChangeSection,
   onNextMonth,
+  onPayMonthlyExpense,
   onBuyStock,
   onSellStock,
   onBuyCrypto,
@@ -124,9 +126,11 @@ export const GameShell: React.FC<GameShellProps> = ({
   onIgnoreAllEvents,
   onToggleIgnoreEvents,
   onBuyHappiness,
+  onIgnoreHappinessCard,
   onBuyPersonalAsset,
   onTogglePersonalAssetInsurance,
   onMarry,
+  onCompleteEducation,
   onToggleInsurance,
   onTryVenture,
   onPlayLottery,
@@ -169,7 +173,6 @@ export const GameShell: React.FC<GameShellProps> = ({
     badge?: number;
   }[] = [
     { id: 'dashboard', label: t.nav.dashboard, icon: Gem },
-    { id: 'finances', label: t.nav.finances, icon: FileSpreadsheet },
     { id: 'investments', label: t.nav.investments, icon: PiggyBank },
     { id: 'properties', label: t.nav.properties, icon: Building2 },
     { id: 'businesses', label: t.nav.businesses, icon: Briefcase },
@@ -180,6 +183,10 @@ export const GameShell: React.FC<GameShellProps> = ({
   ];
 
   const handleNextMonthClick = () => {
+    if (!game.monthlyExpensePaidThisTurn) {
+      onNextMonth();
+      return;
+    }
     if (settings.confirmNextMonth) {
       setConfirmNextOpen(true);
     } else {
@@ -394,11 +401,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                 </div>
               </button>
 
-              <button
-                type="button"
-                onClick={() => onChangeSection('finances')}
-                className="min-w-0 rounded-2xl bg-[#F6E7D7] px-2 py-2.5 sm:p-4 text-center shadow-md hover:bg-[#F1DFCC] transition-colors"
-              >
+              <div className="min-w-0 rounded-2xl bg-[#F6E7D7] px-2 py-2.5 sm:p-4 text-center shadow-md">
                 <div className="mx-auto flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center">
                   <Banknote className="h-5 w-5 sm:h-7 sm:w-7 text-[#169C5E]" />
                 </div>
@@ -408,7 +411,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                 <div className="text-xs sm:text-base font-semibold text-[#5E544C] mt-0.5 whitespace-nowrap">
                   {t.cashOnHand}
                 </div>
-              </button>
+              </div>
 
               <button
                 type="button"
@@ -473,22 +476,17 @@ export const GameShell: React.FC<GameShellProps> = ({
               summary={summary}
               settings={settings}
               onNextMonth={handleNextMonthClick}
+              onPayMonthlyExpense={onPayMonthlyExpense}
               onNavigate={onChangeSection}
               onBuyHappiness={onBuyHappiness}
+              onIgnoreHappinessCard={onIgnoreHappinessCard}
               onBuyPersonalAsset={onBuyPersonalAsset}
               onTogglePersonalAssetInsurance={onTogglePersonalAssetInsurance}
               onMarry={onMarry}
+              onCompleteEducation={onCompleteEducation}
               onToggleInsurance={onToggleInsurance}
               onTryVenture={onTryVenture}
               onPlayLottery={onPlayLottery}
-            />
-          )}
-          {activeSection === 'finances' && (
-            <FinancesView
-              game={game}
-              summary={summary}
-              language={lang}
-              onNavigate={onChangeSection}
             />
           )}
           {activeSection === 'investments' && (
@@ -564,7 +562,7 @@ export const GameShell: React.FC<GameShellProps> = ({
         {/* MOBILE BOTTOM NAVIGATION BAR (< lg) matching Screenshot 3 (#1E2129 + Gold active icons) */}
         <nav
           aria-label={t.shell.allSections}
-          className="lg:hidden shrink-0 z-40 border-t border-white/10 bg-[#1E2129] grid grid-cols-5 pt-2 pb-[calc(18px+env(safe-area-inset-bottom,0px))]"
+          className="lg:hidden shrink-0 z-40 border-t border-white/10 bg-[#1E2129] grid grid-cols-4 pt-2 pb-[calc(18px+env(safe-area-inset-bottom,0px))]"
         >
         {[
           { id: 'dashboard' as NavSection, label: t.nav.dashboard, icon: Gem },
@@ -575,7 +573,6 @@ export const GameShell: React.FC<GameShellProps> = ({
             icon: Flame,
             badge: pendingEventCount || undefined,
           },
-          { id: 'finances' as NavSection, label: t.nav.finances, icon: FileSpreadsheet },
         ].map((tab) => {
           const Icon = tab.icon;
           const active = activeSection === tab.id;

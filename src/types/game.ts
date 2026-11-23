@@ -396,6 +396,16 @@ export interface CharacterVenture {
   maxNetProfit: number;
 }
 
+export interface EducationCourse {
+  id: string;
+  tier: 1 | 2 | 3 | 4 | 5;
+  titleEn: string;
+  titleBn: string;
+  cost: number;
+  minSalaryBoostPct: number;
+  maxSalaryBoostPct: number;
+}
+
 export type PersonalAssetId = 'car' | 'house' | 'yacht' | 'villa';
 
 export interface PersonalAssetCatalogItem {
@@ -470,15 +480,21 @@ export interface GameState {
   transactions: TransactionRecord[];
   monthlyHistory: MonthlySnapshot[];
   realizedInvestmentPnL: number;
-  happiness: number; // 0..100
+  happiness: number; // < 50 triggers Game Over, unlimited upside
   actionsUsedThisTurn: number; // 0..6
+  monthlyExpensePaidThisTurn?: boolean;
+  monthlyExpensePaidAmountThisTurn?: number;
   healthInsured: boolean;
   propertyInsured: boolean;
   personalAssets?: OwnedPersonalAsset[];
   activeVentures?: CharacterVenture[];
   activeHappinessItems?: HappinessItem[];
   purchasedHappinessIdsThisTurn?: string[];
+  handledHappinessIdsThisTurn?: string[];
   playedLotteryIdsThisTurn?: string[];
+  completedEducationIds?: string[];
+  educationBoostsById?: Record<string, number>;
+  lastEducationYear?: number;
   inflationRate?: number;
   inflationMultiplier?: number;
   maritalStatus?: MaritalStatus;

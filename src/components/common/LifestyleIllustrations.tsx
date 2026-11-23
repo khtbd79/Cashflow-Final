@@ -328,3 +328,117 @@ export const LotteryIllustration: React.FC<{ className?: string }> = ({
     <text x="94" y="34" textAnchor="middle" fill="#FFFFFF" fontSize="10" fontWeight="bold">$</text>
   </svg>
 );
+
+export const EducationIllustration: React.FC<{
+  tier: 1 | 2 | 3 | 4 | 5;
+  className?: string;
+}> = ({ tier, className = 'w-24 h-24' }) => {
+  if (tier === 1) {
+    // Online Course: Laptop + Graduation Cap + Blue Book on wooden desk
+    return (
+      <svg viewBox="0 0 140 110" className={className} aria-hidden="true">
+        <path d="M18 76 L70 98 L124 72 L72 52 Z" fill="#C89F7B" />
+        <path d="M18 76 L70 98 V104 L18 82 Z" fill="#A98260" />
+        <path d="M70 98 L124 72 V78 L70 104 Z" fill="#926D4E" />
+        {/* Laptop screen */}
+        <polygon points="46,24 102,16 106,56 50,64" fill="#1E293B" stroke="#475569" strokeWidth="2.5" />
+        <polygon points="50,28 98,21 101,53 53,60" fill="#234876" />
+        {/* Laptop keyboard base */}
+        <polygon points="50,64 106,56 120,70 64,80" fill="#475569" />
+        <polygon points="54,65 102,58 112,68 64,76" fill="#334155" />
+        {/* Graduation cap inside screen */}
+        <polygon points="62,38 76,30 90,36 76,44" fill="#1E293B" stroke="#F7CA44" strokeWidth="1.2" />
+        <rect x="69" y="41" width="14" height="5" rx="1" fill="#1E293B" />
+        <line x1="88" y1="36" x2="88" y2="48" stroke="#F7CA44" strokeWidth="2" />
+        {/* Play badge */}
+        <circle cx="58" cy="48" r="5" fill="#F8FAFC" opacity="0.9" />
+        <polygon points="56.5,45.5 61,48 56.5,50.5" fill="#1E293B" />
+        {/* Blue book in front */}
+        <polygon points="32,68 54,64 62,74 40,78" fill="#2563EB" />
+        <polygon points="32,68 40,78 40,84 32,74" fill="#1D4ED8" />
+        <polygon points="40,78 62,74 62,80 40,84" fill="#F8FAFC" />
+      </svg>
+    );
+  }
+
+  if (tier === 2) {
+    // Higher Education: Upright hardcover textbooks & golden bookmark
+    return (
+      <svg viewBox="0 0 140 110" className={className} aria-hidden="true">
+        <path d="M18 76 L70 98 L124 72 L72 52 Z" fill="#C89F7B" />
+        <path d="M18 76 L70 98 V104 L18 82 Z" fill="#A98260" />
+        <path d="M70 98 L124 72 V78 L70 104 Z" fill="#926D4E" />
+        {/* Tall Navy Book */}
+        <polygon points="54,26 84,18 96,24 66,32" fill="#1E3A8A" />
+        <polygon points="54,26 66,32 66,78 54,72" fill="#1D4ED8" />
+        <polygon points="66,32 96,24 96,70 66,78" fill="#1E40AF" />
+        <polygon points="58,34 62,36 62,68 58,66" fill="#F7CA44" />
+        {/* Second Crimson Book */}
+        <polygon points="40,42 54,38 54,74 40,78" fill="#B91C1C" />
+        <polygon points="40,42 54,38 62,42 48,46" fill="#DC2626" />
+        {/* Golden Ribbon */}
+        <polygon points="78,29 84,27 84,48 81,44 78,48" fill="#F7CA44" />
+      </svg>
+    );
+  }
+
+  if (tier === 3) {
+    // Postgraduate Degree: Diploma Scroll & Academic Cap
+    return (
+      <svg viewBox="0 0 140 110" className={className} aria-hidden="true">
+        <path d="M18 76 L70 98 L124 72 L72 52 Z" fill="#C89F7B" />
+        <path d="M18 76 L70 98 V104 L18 82 Z" fill="#A98260" />
+        <path d="M70 98 L124 72 V78 L70 104 Z" fill="#926D4E" />
+        {/* Rolled Parchment Diploma */}
+        <g transform="rotate(-14 70 64)">
+          <rect x="34" y="54" width="72" height="18" rx="8" fill="#FEF3C7" stroke="#D97706" strokeWidth="2" />
+          <ellipse cx="102" cy="63" rx="4" ry="8" fill="#FDE68A" stroke="#D97706" strokeWidth="1.5" />
+          <rect x="64" y="52" width="12" height="22" rx="2" fill="#DC2626" />
+          <circle cx="70" cy="63" r="5" fill="#F7CA44" />
+        </g>
+        {/* Graduation Cap on top */}
+        <polygon points="40,34 70,20 100,34 70,48" fill="#1E293B" stroke="#475569" strokeWidth="2" />
+        <path d="M52 40 V50 C52 55 88 55 88 50 V40 Z" fill="#334155" />
+        <line x1="94" y1="36" x2="94" y2="52" stroke="#F7CA44" strokeWidth="2.5" strokeLinecap="round" />
+        <circle cx="94" cy="53" r="3" fill="#F7CA44" />
+      </svg>
+    );
+  }
+
+  if (tier === 4) {
+    // Experience Exchange: Connected Global Network & Mentorship Badges
+    return (
+      <svg viewBox="0 0 140 110" className={className} aria-hidden="true">
+        <ellipse cx="70" cy="86" rx="46" ry="13" fill="#DDD0C0" />
+        {/* Globe */}
+        <circle cx="70" cy="52" r="26" fill="#0284C7" stroke="#0369A1" strokeWidth="2.5" />
+        <ellipse cx="70" cy="52" rx="12" ry="26" fill="none" stroke="#BAE6FD" strokeWidth="1.8" />
+        <line x1="44" y1="52" x2="96" y2="52" stroke="#BAE6FD" strokeWidth="1.8" />
+        <path d="M48 40 Q70 46 92 40 M48 64 Q70 58 92 64" fill="none" stroke="#BAE6FD" strokeWidth="1.6" />
+        {/* Left & Right Exchange Arrows/Badges */}
+        <circle cx="38" cy="40" r="10" fill="#F7CA44" stroke="#B45309" strokeWidth="2" />
+        <circle cx="38" cy="38" r="3.5" fill="#26201C" />
+        <path d="M32 46 C32 42 44 42 44 46" fill="#26201C" />
+        <circle cx="102" cy="64" r="10" fill="#169C5E" stroke="#14532D" strokeWidth="2" />
+        <circle cx="102" cy="62" r="3.5" fill="#FFFFFF" />
+        <path d="M96 70 C96 66 108 66 108 70" fill="#FFFFFF" />
+      </svg>
+    );
+  }
+
+  // Tier 5: MBA / Executive Briefcase + Rising Gold Trophy Chart
+  return (
+    <svg viewBox="0 0 140 110" className={className} aria-hidden="true">
+      <ellipse cx="70" cy="88" rx="46" ry="12" fill="#DDD0C0" />
+      {/* Executive Briefcase */}
+      <path d="M58 34 V26 H82 V34" fill="none" stroke="#78350F" strokeWidth="4.5" strokeLinecap="round" />
+      <rect x="34" y="34" width="72" height="46" rx="9" fill="#92400E" stroke="#78350F" strokeWidth="2.5" />
+      <path d="M34 46 Q70 56 106 46" fill="none" stroke="#B45309" strokeWidth="3" />
+      <rect x="64" y="46" width="12" height="8" rx="2" fill="#F7CA44" />
+      {/* Gold Growth Star Seal */}
+      <circle cx="96" cy="32" r="11" fill="#F7CA44" stroke="#B45309" strokeWidth="2" />
+      <polygon points="96,24 98.5,29.5 104,30 100,34 101,39.5 96,36.5 91,39.5 92,34 88,30 93.5,29.5" fill="#26201C" />
+    </svg>
+  );
+};
+

@@ -22,15 +22,18 @@ import {
   buyPersonalAsset,
   buyProperty,
   buyStock,
+  completeEducationCourse,
   continueAfterVictory,
   createCustomBusiness,
   createNewGame,
   dismissPendingEvent,
   EngineActionResult,
   ignoreAllPendingEvents,
+  ignoreHappinessCard,
   investFixedIncome,
   marryPartner,
   payIncomeTax,
+  payMonthlyExpenses,
   payZakat,
   playLottery,
   redeemFixedIncome,
@@ -68,7 +71,6 @@ import {
 const SESSION_NAV_KEY = 'cashflow_session_nav_v1';
 const VALID_SECTIONS: NavSection[] = [
   'dashboard',
-  'finances',
   'investments',
   'properties',
   'businesses',
@@ -474,6 +476,7 @@ export default function App() {
           setActiveSection(sec);
         }}
         onNextMonth={handleNextMonth}
+        onPayMonthlyExpense={() => applyEngineResult(payMonthlyExpenses(game, lang))}
         onBuyStock={(symbol, shares) =>
           applyEngineResult(buyStock(game, symbol, shares, undefined, lang))
         }
@@ -519,6 +522,9 @@ export default function App() {
         }
         onToggleIgnoreEvents={handleToggleIgnoreEvents}
         onBuyHappiness={(itemId) => applyEngineResult(buyHappinessItem(game, itemId, lang))}
+        onIgnoreHappinessCard={(cardId) =>
+          applyEngineResult(ignoreHappinessCard(game, cardId), 'click')
+        }
         onBuyPersonalAsset={(assetId: PersonalAssetId) =>
           applyEngineResult(buyPersonalAsset(game, assetId, lang))
         }
@@ -526,6 +532,9 @@ export default function App() {
           applyEngineResult(togglePersonalAssetInsurance(game, assetId, lang))
         }
         onMarry={() => applyEngineResult(marryPartner(game, lang))}
+        onCompleteEducation={(courseId) =>
+          applyEngineResult(completeEducationCourse(game, courseId, lang))
+        }
         onToggleInsurance={(planId) => applyEngineResult(toggleInsurancePlan(game, planId, lang))}
         onTryVenture={(ventureId) => {
           const res = tryCharacterVenture(game, ventureId, lang);

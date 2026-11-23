@@ -1,5 +1,8 @@
 import {
   getAnnualMissingAssetsPenalty,
+  getEducationCoursesForProfession,
+  getEducationCourseTitle,
+  getEffectiveEducationCost,
   getEffectiveHappinessCost,
   getEffectivePersonalAssetInsurance,
   getEffectivePersonalAssetPrice,
@@ -229,13 +232,19 @@ export function createNewGame(professionId: string): GameState {
     realizedInvestmentPnL: 0,
     happiness: 70,
     actionsUsedThisTurn: 0,
+    monthlyExpensePaidThisTurn: false,
+    monthlyExpensePaidAmountThisTurn: 0,
     healthInsured: false,
     propertyInsured: false,
     personalAssets: [],
     activeVentures: rollVenturesForProfession(prof.id, 2),
     activeHappinessItems: rollMonthlyHappinessItems(prof.id, 5),
     purchasedHappinessIdsThisTurn: [],
+    handledHappinessIdsThisTurn: [],
     playedLotteryIdsThisTurn: [],
+    completedEducationIds: [],
+    educationBoostsById: {},
+    lastEducationYear: 0,
     inflationRate: 0,
     inflationMultiplier: 1,
     maritalStatus: initialMaritalStatus,
@@ -325,6 +334,18 @@ export function advanceMonth(
     return {
       state,
       error: lang === 'bn' ? 'এই মাসটি ইতিমধ্যেই প্রক্রিয়াকরণ হয়েছে।' : 'This turn has already been processed.',
+    };
+  }
+
+  // Require mandatory monthly living expenses payment before ending the turn
+  if (!state.monthlyExpensePaidThisTurn) {
+    return {
+      state,
+      redirectTo: 'dashboard',
+      error:
+        lang === 'bn'
+          ? 'মাস শেষ করার আগে ড্যাশবোর্ড থেকে মাসিক খরচ পরিশোধ করুন।'
+          : 'Pay your mandatory Monthly Expenses on the Dashboard before ending the month.',
     };
   }
 
@@ -541,21 +562,8 @@ export function advanceMonth(
   const interestPaidToCash = roundMoney(bondInterestPaid + savingsInterestPaid);
   const totalPassiveIncomeReceived = roundMoney(cashPassiveNonInterest + interestPaidToCash);
 
-  // 4. Living Expenses & Insurance Premiums
-  const livingPaid = summaryBefore.livingExpensesTotal;
-  if (livingPaid > 0) {
-    runningCash = roundMoney(runningCash - livingPaid);
-    txs = appendTx(
-      txs,
-      nextTurn,
-      nextYear,
-      nextMonth,
-      'Living Expenses',
-      'Monthly Housing, Food, Utilities & Living Costs',
-      -livingPaid,
-      runningCash
-    );
-  }
+  // 4. Living Expenses (already paid during turn via payMonthlyExpenses) & Insurance Premiums
+  const livingPaid = state.monthlyExpensePaidAmountThisTurn ?? summaryBefore.livingExpensesTotal;
   const insurancePaid = summaryBefore.insuranceMonthlyCost;
   if (insurancePaid > 0) {
     runningCash = roundMoney(runningCash - insurancePaid);
@@ -1004,7 +1012,7 @@ export function advanceMonth(
     familyHappinessDelta -
     (yearlyMissingAssetsHappinessLoss ?? 0) -
     (uninsuredAccidentHappinessLoss ?? 0);
-  const nextHappiness = Math.max(0, Math.min(100, (state.happiness ?? 70) + happinessDelta));
+  const nextHappiness = Math.max(0, (state.happiness ?? 70) + happinessDelta);
 
   const netTurnCashChange = roundMoney(runningCash - state.cash);
 
@@ -1031,9 +1039,12 @@ export function advanceMonth(
     livingExpenses: nextLivingExpenses,
     happiness: nextHappiness,
     actionsUsedThisTurn: 0,
+    monthlyExpensePaidThisTurn: false,
+    monthlyExpensePaidAmountThisTurn: 0,
     activeVentures: rollVenturesForProfession(state.professionId, 2),
     activeHappinessItems: rollMonthlyHappinessItems(state.professionId, 5),
     purchasedHappinessIdsThisTurn: [],
+    handledHappinessIdsThisTurn: [],
     playedLotteryIdsThisTurn: [],
     inflationRate: nextInflationRate,
     inflationMultiplier: nextInflationMultiplier,
@@ -2167,9 +2178,16 @@ export function resolveEventChoice(
     case 'cash_delta': {
       let delta = choice.amount ?? 0;
       const insuredMedical = eventCard.templateId === 'exp_medical' && workingState.healthInsured;
+      const ownedPersonalAssets = workingState.personalAssets ?? [];
       const insuredAsset =
-        (eventCard.templateId === 'exp_car_repair' || eventCard.templateId === 'exp_home_repair') &&
-        workingState.propertyInsured;
+        (eventCard.templateId === 'exp_car_repair' &&
+          (Boolean(workingState.propertyInsured) ||
+            ownedPersonalAssets.some((a) => a.id === 'car' && a.insured))) ||
+        (eventCard.templateId === 'exp_home_repair' &&
+          (Boolean(workingState.propertyInsured) ||
+            ownedPersonalAssets.some(
+              (a) => (a.id === 'house' || a.id === 'villa') && a.insured
+            )));
       if (delta < 0 && (insuredMedical || insuredAsset)) {
         delta = roundMoney(delta * 0.15); // Insurance covers 85%
       }
@@ -2396,7 +2414,7 @@ export function resolveEventChoice(
       const paid = Math.min(Math.max(0, workingState.cash), birthCost);
       workingState.cash = roundMoney(workingState.cash - paid);
       workingState.childrenCount = (workingState.childrenCount ?? 0) + 1;
-      workingState.happiness = Math.min(100, (workingState.happiness ?? 70) + 14);
+      workingState.happiness = (workingState.happiness ?? 70) + 14;
       const addFood = Math.round(monthlyCare * 0.42);
       const addEdu = Math.round(monthlyCare * 0.58);
       workingState.livingExpenses = {
@@ -2540,7 +2558,9 @@ export function buyHappinessItem(
       ? state.activeHappinessItems
       : getHappinessItemsForProfession(state.professionId);
   const pool = withPilgrimageHappinessItems(rawPool, state.professionId);
-  const item = pool.find((h) => h.id === itemId);
+  const item =
+    pool.find((h) => h.id === itemId) ??
+    getHappinessItemsForProfession(state.professionId).find((h) => h.id === itemId);
   if (!item) {
     return { state, error: lang === 'bn' ? 'আইটেম পাওয়া যায়নি।' : 'Item not found.' };
   }
@@ -2555,13 +2575,6 @@ export function buyHappinessItem(
     };
   }
   const currentHappiness = state.happiness ?? 70;
-  if (currentHappiness >= 100) {
-    return {
-      state,
-      error: lang === 'bn' ? 'সুখ ইতিমধ্যেই ১০০% পূর্ণ!' : 'Happiness is already at 100!',
-    };
-  }
-
   const effectiveCost = getEffectiveHappinessCost(item, state);
   if (state.cash < effectiveCost) {
     return {
@@ -2574,7 +2587,7 @@ export function buyHappinessItem(
   }
 
   const nextCash = roundMoney(state.cash - effectiveCost);
-  const nextHappiness = Math.min(100, currentHappiness + item.happinessGain);
+  const nextHappiness = currentHappiness + item.happinessGain;
   const itemName = getHappinessItemName(item, lang);
 
   const txs = appendTx(
@@ -2588,13 +2601,16 @@ export function buyHappinessItem(
     nextCash
   );
 
+  const handledIds = state.handledHappinessIdsThisTurn ?? [];
   return {
     state: {
       ...state,
       cash: nextCash,
       happiness: nextHappiness,
       purchasedHappinessIdsThisTurn: [...purchasedIds, itemId],
-      actionsUsedThisTurn: Math.min(6, (state.actionsUsedThisTurn ?? 0) + 1),
+      handledHappinessIdsThisTurn: handledIds.includes(itemId)
+        ? handledIds
+        : [...handledIds, itemId],
       transactions: txs,
     },
     successMessage:
@@ -2614,15 +2630,6 @@ export function marryPartner(
       error: lang === 'bn' ? 'আপনি ইতিমধ্যেই বিবাহিত।' : 'You are already married.',
     };
   }
-  if ((state.actionsUsedThisTurn ?? 0) >= 6) {
-    return {
-      state,
-      error:
-        lang === 'bn'
-          ? 'এই মাসের সব কার্যক্রম (৬/৬) শেষ — পরবর্তী মাসে যান।'
-          : 'Turn action limit (6/6) reached — advance to Next Month.',
-    };
-  }
   const weddingCost = getWeddingCost(state);
   if (state.cash < weddingCost) {
     return {
@@ -2635,7 +2642,7 @@ export function marryPartner(
   }
 
   const nextCash = roundMoney(state.cash - weddingCost);
-  const nextHappiness = Math.min(100, (state.happiness ?? 70) + 18);
+  const nextHappiness = (state.happiness ?? 70) + 18;
   const inf = state.inflationMultiplier ?? 1;
   const foodDelta = Math.round(110 * inf);
   const entDelta = Math.round(60 * inf);
@@ -2651,6 +2658,7 @@ export function marryPartner(
     nextCash
   );
 
+  const handledIds = state.handledHappinessIdsThisTurn ?? [];
   return {
     state: {
       ...state,
@@ -2663,7 +2671,9 @@ export function marryPartner(
         food: state.livingExpenses.food + foodDelta,
         entertainment: state.livingExpenses.entertainment + entDelta,
       },
-      actionsUsedThisTurn: Math.min(6, (state.actionsUsedThisTurn ?? 0) + 1),
+      handledHappinessIdsThisTurn: handledIds.includes('__marry__')
+        ? handledIds
+        : [...handledIds, '__marry__'],
       transactions: txs,
     },
     successMessage:
@@ -2784,7 +2794,7 @@ export function tryCharacterVenture(
       venture.minNetProfit + randomFloat() * (venture.maxNetProfit - venture.minNetProfit);
     const profit = Math.max(10, Math.round(rawProfit / 10) * 10);
     const nextCash = roundMoney(state.cash + profit);
-    const nextHappiness = Math.min(100, (state.happiness ?? 70) + 2);
+    const nextHappiness = (state.happiness ?? 70) + 2;
     const txs = appendTx(
       state.transactions,
       state.currentTurn,
@@ -2866,6 +2876,7 @@ export function buyPersonalAsset(
 
   const tpl = getPersonalAssetById(assetId);
   const price = getEffectivePersonalAssetPrice(tpl, state);
+  const monthlyPremium = getEffectivePersonalAssetInsurance(tpl, state);
   const name = getPersonalAssetName(tpl, lang);
 
   if (state.cash < price) {
@@ -2879,13 +2890,13 @@ export function buyPersonalAsset(
   }
 
   const nextCash = roundMoney(state.cash - price);
-  const nextHappiness = Math.min(100, (state.happiness ?? 70) + tpl.buyHappinessBonus);
+  const nextHappiness = (state.happiness ?? 70) + tpl.buyHappinessBonus;
   const nextOwned = [
     ...existing,
     {
       id: assetId,
       purchasePrice: price,
-      insured: false,
+      insured: true,
       purchasedTurn: state.currentTurn,
     },
   ];
@@ -2914,8 +2925,8 @@ export function buyPersonalAsset(
     state: nextState,
     successMessage:
       lang === 'bn'
-        ? `${name} কেনা হয়েছে (+${tpl.buyHappinessBonus} সুখ) — দুর্ঘটনা এড়াতে এখনই বীমা করুন!`
-        : `Purchased ${name} (+${tpl.buyHappinessBonus} Happiness) — insure it to prevent accident losses!`,
+        ? `${name} কেনা হয়েছে (+${tpl.buyHappinessBonus} সুখ) — বীমা বিভাগে এর মাসিক বীমা (${formatCurrency(monthlyPremium)}/মাস) যুক্ত ও সক্রিয় হয়েছে!`
+        : `Purchased ${name} (+${tpl.buyHappinessBonus} Happiness) — monthly insurance (${formatCurrency(monthlyPremium)}/mo) added and active under Insurance!`,
   };
 }
 
@@ -3038,7 +3049,7 @@ export function playLottery(
 
   const netDelta = roundMoney(grossPrize - ticket.cost);
   const nextCash = roundMoney(state.cash + netDelta);
-  const nextHappiness = Math.min(100, (state.happiness ?? 70) + happinessBoost);
+  const nextHappiness = (state.happiness ?? 70) + happinessBoost;
   const nextPlayed = [...played, ticketId];
 
   const txDesc =
@@ -3138,7 +3149,7 @@ export function payZakat(
     mode === 'due' ||
     (amount >= 25 && (state.zakatHappinessAwardedYear ?? 0) !== state.year);
   const happinessGain = canAwardHappiness ? (mode === 'due' ? 8 : 5) : 0;
-  const nextHappiness = Math.min(100, (state.happiness ?? 70) + happinessGain);
+  const nextHappiness = (state.happiness ?? 70) + happinessGain;
 
   const desc =
     mode === 'due'
@@ -3215,7 +3226,7 @@ export function payIncomeTax(
     mode === 'due' ||
     (amount >= 25 && (state.taxHappinessAwardedYear ?? 0) !== state.year);
   const happinessGain = canAwardHappiness ? (mode === 'due' ? 5 : 4) : 0;
-  const nextHappiness = Math.min(100, (state.happiness ?? 70) + happinessGain);
+  const nextHappiness = (state.happiness ?? 70) + happinessGain;
 
   const desc =
     mode === 'due'
@@ -3258,6 +3269,210 @@ export function payIncomeTax(
           : `Paid ${formatCurrency(amount)} Income Tax.`,
   };
 }
+
+// ==========================================
+// MANDATORY MONTHLY LIVING EXPENSES PAYMENT
+// ==========================================
+export function payMonthlyExpenses(
+  state: GameState,
+  lang: LanguageCode = 'en'
+): EngineActionResult {
+  if (state.gameOver || (state.happiness ?? 70) < 50) {
+    return { state: checkGameOver(state) };
+  }
+
+  if (state.monthlyExpensePaidThisTurn) {
+    return {
+      state,
+      error:
+        lang === 'bn'
+          ? 'এই মাসের খরচ ইতিমধ্যেই পরিশোধ করা হয়েছে।'
+          : 'Monthly expenses have already been paid this turn.',
+    };
+  }
+
+  const summary = computeFinancialSummary(state);
+  const amount = roundMoney(Math.max(0, summary.livingExpensesTotal));
+  let runningCash = state.cash;
+  let updatedLoans = [...state.loans];
+  let txs = [...state.transactions];
+  let creditDrawn = 0;
+
+  // Prevent soft-lock if the player spent cash before paying mandatory monthly expenses
+  if (runningCash < amount) {
+    const shortfall = roundMoney(amount - runningCash);
+    const facilityAmount = Math.ceil(shortfall / 100) * 100;
+    creditDrawn = facilityAmount;
+    const rate = 0.18;
+    const term = 24;
+    const overdraftLoan: LoanRecord = {
+      id: uid('loan_od'),
+      name: `Emergency Credit Line (Y${state.year} M${state.month})`,
+      category: 'personal',
+      principal: facilityAmount,
+      remainingBalance: facilityAmount,
+      annualInterestRate: rate,
+      termMonths: term,
+      remainingMonths: term,
+      monthlyPayment: calculateMonthlyLoanPayment(facilityAmount, rate, term),
+      originTurn: state.currentTurn,
+    };
+    updatedLoans.push(overdraftLoan);
+    runningCash = roundMoney(runningCash + facilityAmount);
+    txs = appendTx(
+      txs,
+      state.currentTurn,
+      state.year,
+      state.month,
+      'Loan',
+      `Automatic Credit Facility Draw (${formatCurrency(facilityAmount)} @ 18% APR)`,
+      facilityAmount,
+      runningCash
+    );
+  }
+
+  if (amount > 0) {
+    runningCash = roundMoney(runningCash - amount);
+    txs = appendTx(
+      txs,
+      state.currentTurn,
+      state.year,
+      state.month,
+      'Living Expenses',
+      'Monthly Housing, Food, Utilities & Living Costs',
+      -amount,
+      runningCash
+    );
+  }
+
+  return {
+    state: {
+      ...state,
+      cash: runningCash,
+      loans: updatedLoans,
+      transactions: txs,
+      monthlyExpensePaidThisTurn: true,
+      monthlyExpensePaidAmountThisTurn: amount,
+    },
+    successMessage:
+      lang === 'bn'
+        ? creditDrawn > 0
+          ? `মাসিক খরচ (${formatCurrency(amount)}) পরিশোধিত হয়েছে। ঘাটতি পূরণে ${formatCurrency(creditDrawn)} জরুরি ক্রেডিট যুক্ত হয়েছে।`
+          : `মাসিক খরচ (${formatCurrency(amount)}) পরিশোধিত হয়েছে!`
+        : creditDrawn > 0
+          ? `Paid monthly expenses (${formatCurrency(amount)}). Drew ${formatCurrency(creditDrawn)} Emergency Credit Line for shortfall.`
+          : `Paid monthly expenses (${formatCurrency(amount)})!`,
+  };
+}
+
+export function ignoreHappinessCard(
+  state: GameState,
+  cardId: string
+): EngineActionResult {
+  const handled = state.handledHappinessIdsThisTurn ?? [];
+  if (handled.includes(cardId)) {
+    return { state };
+  }
+  return {
+    state: {
+      ...state,
+      handledHappinessIdsThisTurn: [...handled, cardId],
+    },
+  };
+}
+
+export function completeEducationCourse(
+  state: GameState,
+  courseId: string,
+  lang: LanguageCode = 'en'
+): EngineActionResult {
+  if (state.gameOver || (state.happiness ?? 70) < 50) {
+    return { state: checkGameOver(state) };
+  }
+
+  const courses = getEducationCoursesForProfession(state.professionId);
+  const course = courses.find((c) => c.id === courseId);
+  if (!course) {
+    return {
+      state,
+      error: lang === 'bn' ? 'শিক্ষা কোর্স পাওয়া যায়নি।' : 'Education course not found.',
+    };
+  }
+
+  const completedIds = state.completedEducationIds ?? [];
+  if (completedIds.includes(courseId)) {
+    return {
+      state,
+      error:
+        lang === 'bn'
+          ? 'এই দক্ষতা কোর্সটি ইতিমধ্যেই সম্পন্ন হয়েছে।'
+          : 'You have already completed this course.',
+    };
+  }
+
+  if ((state.lastEducationYear ?? 0) === state.year) {
+    return {
+      state,
+      error:
+        lang === 'bn'
+          ? `প্রতি বছর মাত্র ১টি দক্ষতা কোর্স নেওয়া যাবে। পরবর্তী বছরে (বছর ${state.year + 1}) আবার চেষ্টা করুন।`
+          : `Only 1 skill upgrade per year. Unlock the next one in Year ${state.year + 1}.`,
+    };
+  }
+
+  const cost = getEffectiveEducationCost(course, state);
+  const title = getEducationCourseTitle(course, lang);
+
+  if (state.cash < cost) {
+    return {
+      state,
+      error:
+        lang === 'bn'
+          ? `পর্যাপ্ত নগদ নেই। প্রয়োজন ${formatCurrency(cost)}, হাতে আছে ${formatCurrency(state.cash)}।`
+          : `Insufficient cash. Need ${formatCurrency(cost)}, available ${formatCurrency(state.cash)}.`,
+    };
+  }
+
+  const boostPct = randomInt(course.minSalaryBoostPct, course.maxSalaryBoostPct);
+  const salaryIncrease = Math.max(50, Math.round((state.salary * (boostPct / 100)) / 10) * 10);
+  const nextSalary = roundMoney(state.salary + salaryIncrease);
+  const nextCash = roundMoney(state.cash - cost);
+  const nextCompleted = [...completedIds, courseId];
+  const nextBoosts = { ...(state.educationBoostsById ?? {}), [courseId]: boostPct };
+
+  const txs = appendTx(
+    state.transactions,
+    state.currentTurn,
+    state.year,
+    state.month,
+    'Lifestyle',
+    `Education: ${course.titleEn} (+${boostPct}% Salary)`,
+    -cost,
+    nextCash
+  );
+
+  const nextState = checkVictory({
+    ...state,
+    cash: nextCash,
+    salary: nextSalary,
+    completedEducationIds: nextCompleted,
+    educationBoostsById: nextBoosts,
+    lastEducationYear: state.year,
+    actionsUsedThisTurn: Math.min(6, (state.actionsUsedThisTurn ?? 0) + 1),
+    transactions: txs,
+  });
+
+  return {
+    state: nextState,
+    successMessage:
+      lang === 'bn'
+        ? `${title} সম্পন্ন! মাসিক বেতন +${boostPct}% বেড়েছে (+${formatCurrency(salaryIncrease)}/মাস)।`
+        : `${title} completed! Monthly salary increased by +${boostPct}% (+${formatCurrency(salaryIncrease)}/mo).`,
+  };
+}
+
+
+
 
 
 

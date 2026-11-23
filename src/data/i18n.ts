@@ -231,9 +231,21 @@ export interface TranslationPack {
     turnCardTitle: string;
     turnCardDesc: string;
     turnCardBtn: string;
+    monthlyExpenseTitle: string;
+    monthlyExpenseDesc: string;
+    payExpenseBtn: string;
+    marryCardTitle: string;
+    marryCardDesc: string;
+    ignoreHappinessAria: string;
+    buyHappinessAria: string;
     zakatTaxReminderTitle: string;
     zakatTaxReminderDesc: string;
     openZakatTaxBtn: string;
+    educationTitle: string;
+    educationSubtitle: string;
+    educationSalaryPrefix: string;
+    educationCompleted: string;
+    educationYearDone: string;
   };
   finances: {
     title: string;
@@ -887,14 +899,14 @@ const EN: TranslationPack = {
       divorced: 'Divorced',
     },
     marryBtn: 'Get Married',
-    personalAssetsTitle: 'Personal Assets',
+    personalAssetsTitle: 'Luxury',
     buyBtn: 'Buy',
     ownedBadge: 'Owned',
     insureBtn: 'Insure',
     insuredBtn: 'Insured',
     insuranceRequiredBadge: 'Insurance Required',
     yearlyPenaltyUnit: 'Happiness/yr',
-    lotteryTitle: 'Lucky Lottery',
+    lotteryTitle: 'Lottery',
     lotteryCostLbl: 'Ticket',
     lotteryTopPrizeLbl: 'Top Jackpot',
     lotteryBuyBtn: 'Buy Ticket',
@@ -902,17 +914,32 @@ const EN: TranslationPack = {
     lotteryRandomTag: 'Pure Random',
     insuranceSubtitle: 'If an accident occurs, insurance covers your expenses.',
     happinessSubtitle: 'Boost your happiness and enjoy life experiences.',
-    personalAssetsSubtitle: 'Fulfill your desires and avoid annual happiness penalties.',
-    venturesSubtitle: 'Short-term opportunities matched to your profession with risk and reward.',
-    lotterySubtitle: 'Low-cost random draw tickets for a chance at a major jackpot.',
+    personalAssetsSubtitle: 'Fulfill your desires.',
+    venturesSubtitle: 'Short-term opportunities matched to your profession.',
+    lotterySubtitle: 'Test your luck.',
     turnCardTitle: 'Before Ending the Month',
     turnCardDesc:
       'Review available opportunities, invest your extra cash, and consider insurance and education.',
     turnCardBtn: 'End Month',
+    monthlyExpenseTitle: 'Monthly Expenses',
+    monthlyExpenseDesc:
+      'Includes food, housing, transportation, utilities, and living costs. You must pay this before ending your turn.',
+    payExpenseBtn: 'Pay Expenses',
+    marryCardTitle: 'Get Married',
+    marryCardDesc:
+      'Get Married. Celebrate a new chapter with your partner, grow family joy, and share life together.',
+    ignoreHappinessAria: 'Ignore option',
+    buyHappinessAria: 'Buy option',
     zakatTaxReminderTitle: 'Year-End Zakat & Income Tax Due',
     zakatTaxReminderDesc:
       'Paying your Zakat or Income Tax clears your annual obligation and grants bonus Happiness.',
     openZakatTaxBtn: 'Open Zakat & Tax',
+    educationTitle: 'Education',
+    educationSubtitle:
+      'The value of your labor depends on job demand, experience, knowledge, and skills.',
+    educationSalaryPrefix: 'Salary',
+    educationCompleted: 'Completed',
+    educationYearDone: '1/1 this year',
   },
   finances: {
     title: 'My Financial Statements',
@@ -1604,14 +1631,14 @@ const BN: TranslationPack = {
       divorced: 'তালাকপ্রাপ্ত',
     },
     marryBtn: 'নতুন বিয়ে করুন',
-    personalAssetsTitle: 'নিজস্ব সম্পদ ও বিলাসিতা',
+    personalAssetsTitle: 'বিলাসিতা',
     buyBtn: 'কিনুন',
     ownedBadge: 'মালিকানাধীন',
     insureBtn: 'বীমা করুন',
     insuredBtn: 'বীমাকৃত',
     insuranceRequiredBadge: 'বীমা বাধ্যতামূলক',
     yearlyPenaltyUnit: 'সুখ/বছর',
-    lotteryTitle: 'ভাগ্য লটারি',
+    lotteryTitle: 'লটারী',
     lotteryCostLbl: 'টিকিট মূল্য',
     lotteryTopPrizeLbl: 'সর্বোচ্চ জ্যাকপট',
     lotteryBuyBtn: 'টিকিট কিনুন',
@@ -1619,17 +1646,32 @@ const BN: TranslationPack = {
     lotteryRandomTag: 'সম্পূর্ণ র‍্যান্ডম',
     insuranceSubtitle: 'আপনার কোনো দুর্ঘটনা ঘটলে, বীমা আপনার সমস্ত খরচ বহন করবে।',
     happinessSubtitle: 'আপনার সুখ বাড়ান এবং জীবনের আনন্দ উপভোগ করুন।',
-    personalAssetsSubtitle: 'ইচ্ছা পূরণ করুন ও বার্ষিক সুখ কমে যাওয়া এড়ান।',
-    venturesSubtitle: 'পেশা অনুযায়ী স্বল্পমেয়াদী সুযোগ—সম্ভাব্য লাভ ও ক্ষতির ঝুঁকি।',
-    lotterySubtitle: 'স্বল্প মূল্যে লটারি কেটে ভাগ্য পরীক্ষা করুন।',
+    personalAssetsSubtitle: 'ইচ্ছা পূরণ করুন।',
+    venturesSubtitle: 'পেশা অনুযায়ী স্বল্পমেয়াদী সুযোগ।',
+    lotterySubtitle: 'ভাগ্য পরীক্ষা করুন।',
     turnCardTitle: 'মাস শেষ হওয়ার আগে',
     turnCardDesc:
       'উপলব্ধ সুযোগগুলো যাচাই করুন, অতিরিক্ত অর্থ বিনিয়োগ করুন এবং বীমা ও শিক্ষার বিষয়টি বিবেচনা করুন।',
     turnCardBtn: 'মাস শেষ করুন',
+    monthlyExpenseTitle: 'মাসিক খরচ',
+    monthlyExpenseDesc:
+      'এর মধ্যে খাদ্য, বাসস্থান, পরিবহন এবং অন্যান্য জীবনযাত্রার খরচ অন্তর্ভুক্ত। আপনার পালা শেষ করার আগে অবশ্যই এটি পরিশোধ করতে হবে।',
+    payExpenseBtn: 'খরচ পরিশোধ করুন',
+    marryCardTitle: 'নতুন বিয়ে করুন',
+    marryCardDesc:
+      'নতুন বিয়ে করুন। জীবনসঙ্গীর সাথে নতুন অধ্যায় শুরু করুন এবং পরিবারের সাথে সুখ ভাগ করে নিন।',
+    ignoreHappinessAria: 'ইগনোর করুন',
+    buyHappinessAria: 'কিনুন',
     zakatTaxReminderTitle: 'বছর শেষের জাকাত ও আয়কর বকেয়া রয়েছে',
     zakatTaxReminderDesc:
       'ইসলামী বিধান অনুযায়ী জাকাত বা নির্ধারিত আয়কর পরিশোধ করলে মনে শান্তি ও অতিরিক্ত সুখ যোগ হবে।',
     openZakatTaxBtn: 'জাকাত ও আয়কর দিন',
+    educationTitle: 'শিক্ষা',
+    educationSubtitle:
+      'আপনার শ্রমের মূল্য নির্ভর করে পেশার চাহিদা, অভিজ্ঞতা, জ্ঞান এবং দক্ষতার উপর।',
+    educationSalaryPrefix: 'বেতনে',
+    educationCompleted: 'সম্পন্ন',
+    educationYearDone: 'এই বছরে ১টি সম্পন্ন',
   },
   finances: {
     title: 'আমার আর্থিক বিবরণী',

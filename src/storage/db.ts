@@ -210,6 +210,11 @@ export function normalizeGameState(state: GameState): GameState {
     ...state,
     happiness,
     actionsUsedThisTurn: typeof state.actionsUsedThisTurn === 'number' ? state.actionsUsedThisTurn : 0,
+    monthlyExpensePaidThisTurn: Boolean(state.monthlyExpensePaidThisTurn),
+    monthlyExpensePaidAmountThisTurn:
+      typeof state.monthlyExpensePaidAmountThisTurn === 'number'
+        ? state.monthlyExpensePaidAmountThisTurn
+        : 0,
     healthInsured: Boolean(state.healthInsured),
     propertyInsured: Boolean(state.propertyInsured),
     personalAssets: Array.isArray(state.personalAssets) ? state.personalAssets : [],
@@ -226,9 +231,20 @@ export function normalizeGameState(state: GameState): GameState {
     purchasedHappinessIdsThisTurn: Array.isArray(state.purchasedHappinessIdsThisTurn)
       ? state.purchasedHappinessIdsThisTurn
       : [],
+    handledHappinessIdsThisTurn: Array.isArray(state.handledHappinessIdsThisTurn)
+      ? state.handledHappinessIdsThisTurn
+      : [],
     playedLotteryIdsThisTurn: Array.isArray(state.playedLotteryIdsThisTurn)
       ? state.playedLotteryIdsThisTurn
       : [],
+    completedEducationIds: Array.isArray(state.completedEducationIds)
+      ? state.completedEducationIds
+      : [],
+    educationBoostsById:
+      state.educationBoostsById && typeof state.educationBoostsById === 'object'
+        ? state.educationBoostsById
+        : {},
+    lastEducationYear: typeof state.lastEducationYear === 'number' ? state.lastEducationYear : 0,
     inflationRate: typeof state.inflationRate === 'number' ? state.inflationRate : 0,
     inflationMultiplier:
       typeof state.inflationMultiplier === 'number' && state.inflationMultiplier > 0

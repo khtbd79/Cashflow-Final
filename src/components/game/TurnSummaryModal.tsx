@@ -322,7 +322,7 @@ export const TurnSummaryModal: React.FC<TurnSummaryModalProps> = ({
                   {t.turnSummary.happinessMetric}
                 </div>
                 <div className="mt-0.5 font-mono text-[15px] sm:text-lg font-bold text-[#26201C] tabular-nums whitespace-nowrap">
-                  {summary.happinessAfter ?? 70}/100
+                  {summary.happinessAfter ?? 70}
                 </div>
                 <div
                   className={`mt-0.5 font-mono text-xs sm:text-sm font-bold tabular-nums whitespace-nowrap ${

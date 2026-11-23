@@ -98,7 +98,7 @@ export const ZakatTaxView: React.FC<ZakatTaxViewProps> = ({
           <div className="text-xs sm:text-sm text-[#169C5E] mt-1 font-semibold inline-flex items-center gap-1 whitespace-nowrap">
             <Smile className="h-3.5 w-3.5 shrink-0" />
             <span>
-              {t.happinessLabel}: {summary.happiness}/100
+              {t.happinessLabel}: {summary.happiness}
             </span>
           </div>
         </div>

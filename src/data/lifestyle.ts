@@ -1,6 +1,7 @@
 import { randomInt, randomPick, randomRange, shuffleArray, uid } from '../engine/prng';
 import {
   CharacterVenture,
+  EducationCourse,
   GameState,
   HappinessItem,
   LanguageCode,
@@ -175,13 +176,18 @@ export function rollMonthlyHappinessItems(
     cost: Math.max(40, Math.round((item.cost * profScale) / 10) * 10),
   }));
 
-  const combinedPool = shuffleArray([...profSpecific, ...scaledUniversal]);
+  const pilgrimageItems = buildScaledPilgrimageItems(professionId);
+
+  const combinedPool = shuffleArray([...profSpecific, ...scaledUniversal, ...pilgrimageItems]);
   const picked = combinedPool.slice(0, count).map((tpl) => {
-    const randomizedCost = Math.max(
-      40,
-      Math.round((tpl.cost * randomRange(0.78, 1.32)) / 5) * 5
-    );
-    const randomizedGain = Math.max(4, Math.min(40, tpl.happinessGain + randomInt(-2, 3)));
+    const isPilgrimage =
+      tpl.templateId === 'pilgrimage_umrah' || tpl.templateId === 'pilgrimage_hajj';
+    const randomizedCost = isPilgrimage
+      ? tpl.cost
+      : Math.max(40, Math.round((tpl.cost * randomRange(0.78, 1.32)) / 5) * 5);
+    const randomizedGain = isPilgrimage
+      ? tpl.happinessGain
+      : Math.max(4, Math.min(40, tpl.happinessGain + randomInt(-2, 3)));
     return {
       ...tpl,
       id: uid(tpl.id),
@@ -191,13 +197,7 @@ export function rollMonthlyHappinessItems(
     };
   });
 
-  const pilgrimageItems = buildScaledPilgrimageItems(professionId).map((tpl) => ({
-    ...tpl,
-    id: uid(tpl.id),
-    templateId: tpl.templateId ?? tpl.id,
-  }));
-
-  return [...picked, ...pilgrimageItems].sort((a, b) => a.cost - b.cost);
+  return picked;
 }
 
 export function getEffectiveHappinessCost(
@@ -360,6 +360,24 @@ export function isBusinessMatchedForProfession(
 
 export function getHappinessItemName(item: HappinessItem, lang: LanguageCode): string {
   return lang === 'bn' ? item.nameBn : item.nameEn;
+}
+
+export function getHappinessCardDescription(item: HappinessItem, lang: LanguageCode): string {
+  const tpl = item.templateId ?? item.id;
+  if (tpl === 'pilgrimage_umrah') {
+    return lang === 'bn'
+      ? 'ওমরা হজ। পবিত্র মক্কা ও মদিনায় আধ্যাত্মিক সফর এবং হৃদয়ে গভীর প্রশান্তি।'
+      : 'Umrah Pilgrimage. A spiritual journey to Makkah and Madinah bringing deep peace and joy.';
+  }
+  if (tpl === 'pilgrimage_hajj') {
+    return lang === 'bn'
+      ? 'বড় হজ। জীবনের শ্রেষ্ঠ আধ্যাত্মিক সফর ও আত্মিক পরিপূর্ণতার অমূল্য অভিজ্ঞতা।'
+      : 'Major Hajj Pilgrimage. A once-in-a-lifetime spiritual milestone of faith and fulfillment.';
+  }
+  const name = getHappinessItemName(item, lang);
+  return lang === 'bn'
+    ? `${name}। ব্যস্ত জীবনের ক্লান্তি কাটিয়ে মানসিক প্রশান্তি ও আনন্দ বাড়ানোর দারুণ সুযোগ।`
+    : `${name}. Take a refreshing break from work to recharge and boost your happiness.`;
 }
 
 export function getInsurancePlanName(plan: InsurancePlan, lang: LanguageCode): string {
@@ -946,6 +964,98 @@ export function getLotteryTicketName(
   lang: LanguageCode
 ): string {
   return lang === 'bn' ? ticket.nameBn : ticket.nameEn;
+}
+
+export const PROFESSION_EDUCATION_COURSES: Record<string, EducationCourse[]> = {
+  teacher: [
+    { id: 'tea_edu_1', tier: 1, titleEn: 'Online Course', titleBn: 'অনলাইন কোর্স', cost: 1000, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'tea_edu_2', tier: 2, titleEn: 'Higher Education', titleBn: 'উচ্চশিক্ষা', cost: 1800, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'tea_edu_3', tier: 3, titleEn: 'Postgraduate Degree', titleBn: 'স্নাতকোত্তর ডিগ্রি', cost: 2600, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'tea_edu_4', tier: 4, titleEn: 'Experience Exchange', titleBn: 'অভিজ্ঞতা বিনিময়', cost: 3400, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'tea_edu_5', tier: 5, titleEn: 'MBA', titleBn: 'এমবিএ', cost: 4500, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  doctor: [
+    { id: 'doc_edu_1', tier: 1, titleEn: 'Telemedicine Course', titleBn: 'টেলিমেডিসিন কোর্স', cost: 2200, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'doc_edu_2', tier: 2, titleEn: 'Diagnostic Fellowship', titleBn: 'ডায়াগনস্টিক উচ্চশিক্ষা', cost: 3800, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'doc_edu_3', tier: 3, titleEn: 'MD Postgraduate Degree', titleBn: 'এমডি স্নাতকোত্তর ডিগ্রি', cost: 5600, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'doc_edu_4', tier: 4, titleEn: 'Medical Exchange', titleBn: 'চিকিৎসা অভিজ্ঞতা বিনিময়', cost: 7200, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'doc_edu_5', tier: 5, titleEn: 'Healthcare MBA', titleBn: 'হেলথকেয়ার এমবিএ', cost: 9200, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  engineer: [
+    { id: 'eng_edu_1', tier: 1, titleEn: 'Automation Online Course', titleBn: 'অটোমেশন অনলাইন কোর্স', cost: 1400, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'eng_edu_2', tier: 2, titleEn: 'PE Higher Certification', titleBn: 'প্রকৌশল উচ্চশিক্ষা', cost: 2400, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'eng_edu_3', tier: 3, titleEn: 'M.Sc. Engineering', titleBn: 'ইঞ্জিনিয়ারিং স্নাতকোত্তর', cost: 3600, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'eng_edu_4', tier: 4, titleEn: 'Industrial Exchange', titleBn: 'শিল্প অভিজ্ঞতা বিনিময়', cost: 4800, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'eng_edu_5', tier: 5, titleEn: 'Technical MBA', titleBn: 'টেকনিক্যাল এমবিএ', cost: 6200, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  government_employee: [
+    { id: 'gov_edu_1', tier: 1, titleEn: 'Digital Governance Course', titleBn: 'ই-গভর্ন্যান্স কোর্স', cost: 1000, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'gov_edu_2', tier: 2, titleEn: 'Higher Policy Studies', titleBn: 'জনপ্রশাসনে উচ্চশিক্ষা', cost: 1800, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'gov_edu_3', tier: 3, titleEn: 'MPA Postgraduate Degree', titleBn: 'এমপিএ স্নাতকোত্তর ডিগ্রি', cost: 2700, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'gov_edu_4', tier: 4, titleEn: 'Administrative Exchange', titleBn: 'প্রশাসনিক অভিজ্ঞতা বিনিময়', cost: 3500, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'gov_edu_5', tier: 5, titleEn: 'Executive Public MBA', titleBn: 'এক্সিকিউটিভ এমবিএ', cost: 4600, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  business_owner: [
+    { id: 'biz_edu_1', tier: 1, titleEn: 'Digital Commerce Course', titleBn: 'ডিজিটাল মার্কেটিং কোর্স', cost: 1600, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'biz_edu_2', tier: 2, titleEn: 'Supply Chain Studies', titleBn: 'সাপ্লাই চেইন উচ্চশিক্ষা', cost: 2800, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'biz_edu_3', tier: 3, titleEn: 'Postgraduate Management', titleBn: 'ব্যবসায়িক স্নাতকোত্তর ডিগ্রি', cost: 4200, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'biz_edu_4', tier: 4, titleEn: 'Trade Experience Exchange', titleBn: 'বাণিজ্য অভিজ্ঞতা বিনিময়', cost: 5400, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'biz_edu_5', tier: 5, titleEn: 'Executive MBA', titleBn: 'এক্সিকিউটিভ এমবিএ', cost: 7000, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  office_clerk: [
+    { id: 'clk_edu_1', tier: 1, titleEn: 'Office Systems Course', titleBn: 'অফিস ও এক্সেল কোর্স', cost: 800, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'clk_edu_2', tier: 2, titleEn: 'Higher Accounting Study', titleBn: 'হিসাববিজ্ঞানে উচ্চশিক্ষা', cost: 1400, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'clk_edu_3', tier: 3, titleEn: 'Postgraduate Admin', titleBn: 'প্রশাসনে স্নাতকোত্তর ডিগ্রি', cost: 2100, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'clk_edu_4', tier: 4, titleEn: 'Corporate Desk Exchange', titleBn: 'কর্মক্ষেত্র অভিজ্ঞতা বিনিময়', cost: 2800, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'clk_edu_5', tier: 5, titleEn: 'Business MBA', titleBn: 'এমবিএ', cost: 3600, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  software_developer: [
+    { id: 'dev_edu_1', tier: 1, titleEn: 'Cloud & AI Online Course', titleBn: 'ক্লাউড ও এআই কোর্স', cost: 1700, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'dev_edu_2', tier: 2, titleEn: 'Systems Architecture Study', titleBn: 'সিস্টেম আর্কিটেকচার উচ্চশিক্ষা', cost: 3000, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'dev_edu_3', tier: 3, titleEn: 'M.Sc. Computer Science', titleBn: 'সিএস স্নাতকোত্তর ডিগ্রি', cost: 4400, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'dev_edu_4', tier: 4, titleEn: 'Global Tech Exchange', titleBn: 'টেক অভিজ্ঞতা বিনিময়', cost: 5800, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'dev_edu_5', tier: 5, titleEn: 'Tech Product MBA', titleBn: 'টেক প্রোডাক্ট এমবিএ', cost: 7500, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  lawyer: [
+    { id: 'law_edu_1', tier: 1, titleEn: 'Legal Drafting Course', titleBn: 'আইনি ড্রাফটিং কোর্স', cost: 2000, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'law_edu_2', tier: 2, titleEn: 'Higher Corporate Law', titleBn: 'কর্পোরেট আইনে উচ্চশিক্ষা', cost: 3400, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'law_edu_3', tier: 3, titleEn: 'LL.M. Postgraduate Degree', titleBn: 'এলএল.এম স্নাতকোত্তর ডিগ্রি', cost: 5000, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'law_edu_4', tier: 4, titleEn: 'Bar Council Exchange', titleBn: 'আইনি অভিজ্ঞতা বিনিময়', cost: 6600, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'law_edu_5', tier: 5, titleEn: 'Law & Finance MBA', titleBn: 'কর ও কর্পোরেট এমবিএ', cost: 8400, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  banker: [
+    { id: 'bnk_edu_1', tier: 1, titleEn: 'Financial Modeling Course', titleBn: 'ফাইন্যান্সিয়াল মডেলিং কোর্স', cost: 1600, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'bnk_edu_2', tier: 2, titleEn: 'CFA Higher Studies', titleBn: 'সিএফএ উচ্চশিক্ষা', cost: 2900, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'bnk_edu_3', tier: 3, titleEn: 'M.Sc. in Finance', titleBn: 'ফাইন্যান্সে স্নাতকোত্তর ডিগ্রি', cost: 4300, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'bnk_edu_4', tier: 4, titleEn: 'Global Banking Exchange', titleBn: 'ব্যাংকিং অভিজ্ঞতা বিনিময়', cost: 5600, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'bnk_edu_5', tier: 5, titleEn: 'Finance MBA', titleBn: 'ফাইন্যান্স এমবিএ', cost: 7200, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+  freelancer: [
+    { id: 'frl_edu_1', tier: 1, titleEn: 'UI/UX Online Course', titleBn: 'ডিজাইন অনলাইন কোর্স', cost: 1100, minSalaryBoostPct: 6, maxSalaryBoostPct: 12 },
+    { id: 'frl_edu_2', tier: 2, titleEn: 'Higher Brand Strategy', titleBn: 'ব্র্যান্ড স্ট্র্যাটেজি উচ্চশিক্ষা', cost: 1900, minSalaryBoostPct: 8, maxSalaryBoostPct: 15 },
+    { id: 'frl_edu_3', tier: 3, titleEn: 'Postgraduate Digital Media', titleBn: 'ডিজিটাল মিডিয়ায় স্নাতকোত্তর', cost: 2800, minSalaryBoostPct: 10, maxSalaryBoostPct: 18 },
+    { id: 'frl_edu_4', tier: 4, titleEn: 'Global Studio Exchange', titleBn: 'ক্রিয়েটিভ অভিজ্ঞতা বিনিময়', cost: 3700, minSalaryBoostPct: 12, maxSalaryBoostPct: 20 },
+    { id: 'frl_edu_5', tier: 5, titleEn: 'Creative Business MBA', titleBn: 'বিজনেস ও মার্কেটিং এমবিএ', cost: 4800, minSalaryBoostPct: 15, maxSalaryBoostPct: 24 },
+  ],
+};
+
+export function getEducationCoursesForProfession(professionId: string): EducationCourse[] {
+  return PROFESSION_EDUCATION_COURSES[professionId] ?? PROFESSION_EDUCATION_COURSES.teacher;
+}
+
+export function getEducationCourseTitle(
+  course: { titleEn: string; titleBn: string },
+  lang: LanguageCode
+): string {
+  return lang === 'bn' ? course.titleBn : course.titleEn;
+}
+
+export function getEffectiveEducationCost(
+  course: { cost: number },
+  state: Pick<GameState, 'inflationMultiplier'>
+): number {
+  const inf = state.inflationMultiplier ?? 1;
+  return Math.max(200, Math.round((course.cost * inf) / 50) * 50);
 }
 
 
